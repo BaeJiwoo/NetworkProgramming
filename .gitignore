@@ -416,3 +416,35 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+## [ Visual Studio ]
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+
+## [ C++ / Build Output ]
+x64/
+x86/
+Debug/
+Release/
+*.pdb
+*.ilk
+*.aps
+*.ncb
+*.sdf
+*.ipch
+*.tlog
+*.lastbuildstate
+
+## [ NuGet Packages ]
+packages/
+*.nuget.props
+*.nuget.targets
+
+## [ OS files ]
+Thumbs.db
+.DS_Store
