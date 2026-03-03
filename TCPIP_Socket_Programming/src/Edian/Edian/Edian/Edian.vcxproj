@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{8351fcb5-3a13-44db-bc0c-b7ffdf445f66}</ProjectGuid>
-    <RootNamespace>Chapter4TCPClient</RootNamespace>
+    <ProjectGuid>{d65c24af-78cf-4563-9638-4852455040b4}</ProjectGuid>
+    <RootNamespace>Edian</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -123,7 +123,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="TCPClient.cpp" />
+    <ClCompile Include="check_endian.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
