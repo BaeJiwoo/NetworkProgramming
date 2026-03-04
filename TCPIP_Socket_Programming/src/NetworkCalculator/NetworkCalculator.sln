@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36414.22 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TCPCalculatorServer", "TCPCalculatorServer\TCPCalculatorServer.vcxproj", "{B0CD7B90-ABDC-427D-9C1F-189166869150}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "솔루션 항목", "솔루션 항목", "{2A3A057F-5D22-31FD-628C-DF5EF75AEF1E}"
+	ProjectSection(SolutionItems) = preProject
+		cal.h = cal.h
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TCPCalculatorClient", "TCPCalculatorClient\TCPCalculatorClient.vcxproj", "{B88982E3-37AF-4A7C-AF29-F2418EA81B5B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B0CD7B90-ABDC-427D-9C1F-189166869150}.Debug|x64.ActiveCfg = Debug|x64
+		{B0CD7B90-ABDC-427D-9C1F-189166869150}.Debug|x64.Build.0 = Debug|x64
+		{B0CD7B90-ABDC-427D-9C1F-189166869150}.Debug|x86.ActiveCfg = Debug|Win32
+		{B0CD7B90-ABDC-427D-9C1F-189166869150}.Debug|x86.Build.0 = Debug|Win32
+		{B0CD7B90-ABDC-427D-9C1F-189166869150}.Release|x64.ActiveCfg = Release|x64
+		{B0CD7B90-ABDC-427D-9C1F-189166869150}.Release|x64.Build.0 = Release|x64
+		{B0CD7B90-ABDC-427D-9C1F-189166869150}.Release|x86.ActiveCfg = Release|Win32
+		{B0CD7B90-ABDC-427D-9C1F-189166869150}.Release|x86.Build.0 = Release|Win32
+		{B88982E3-37AF-4A7C-AF29-F2418EA81B5B}.Debug|x64.ActiveCfg = Debug|x64
+		{B88982E3-37AF-4A7C-AF29-F2418EA81B5B}.Debug|x64.Build.0 = Debug|x64
+		{B88982E3-37AF-4A7C-AF29-F2418EA81B5B}.Debug|x86.ActiveCfg = Debug|Win32
+		{B88982E3-37AF-4A7C-AF29-F2418EA81B5B}.Debug|x86.Build.0 = Debug|Win32
+		{B88982E3-37AF-4A7C-AF29-F2418EA81B5B}.Release|x64.ActiveCfg = Release|x64
+		{B88982E3-37AF-4A7C-AF29-F2418EA81B5B}.Release|x64.Build.0 = Release|x64
+		{B88982E3-37AF-4A7C-AF29-F2418EA81B5B}.Release|x86.ActiveCfg = Release|Win32
+		{B88982E3-37AF-4A7C-AF29-F2418EA81B5B}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A0F0D7D8-B626-4DBA-9F66-41C84D7ACC9E}
+	EndGlobalSection
+EndGlobal
