@@ -1,4 +1,5 @@
 #include "..\cal.h"
+#include "..\..\error.h"
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <stdio.h>
@@ -10,6 +11,8 @@ int main(int argc, char* argv[]) {
 
 	char ip[16] = "127.0.0.1";
 	if(argc >= 2) strcpy_s(ip, argv[1]);
+
+	//printf("서버 IP 주소 : %s\n", ip);
 
 	WSADATA wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
@@ -26,9 +29,7 @@ int main(int argc, char* argv[]) {
 	serveraddr.sin_family = AF_INET;
 	serveraddr.sin_port = htons(PORT);
 	if (inet_pton(AF_INET, ip, &serveraddr.sin_addr) != 1) {
-		// IP 주소가 잘못되었을 경우 처리
-		printf("Invalid IP address\n");
-		return 1;
+		exit_with_error("IP 주소 형식이 올바르지 않습니다.\n입력값을 확인하세요.");
 	}
 
 	cal_data rdata;
@@ -54,6 +55,7 @@ int main(int argc, char* argv[]) {
 		rdata.left_num = htonl(rdata.left_num);
 		rdata.right_num = htonl(rdata.right_num);
 
+		printf("메시지 전송을 시도해요.\n");
 		retval = sendto(clientsock, (char*)&rdata, sizeof(rdata), 0, (struct sockaddr*)&serveraddr, serveraddrlen);
 		if (retval == SOCKET_ERROR) break;
 

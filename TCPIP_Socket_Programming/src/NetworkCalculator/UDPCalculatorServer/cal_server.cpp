@@ -1,4 +1,7 @@
+#define _WINSOCK_DEPRECATED_NO_WARNINGS 
+
 #include "..\cal.h"
+#include "..\..\error.h"
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <stdio.h>
@@ -15,6 +18,7 @@ int main() {
 	
 	SOCKET listensock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (listensock == INVALID_SOCKET) {
+		exit_with_error("소켓 생성 에러");
 		return 1;
 	}
 
@@ -25,7 +29,10 @@ int main() {
 	serveraddr.sin_addr.S_un.S_addr = INADDR_ANY;
 
 	retval = bind(listensock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
-	if (retval == SOCKET_ERROR) return 1;
+	if (retval == SOCKET_ERROR) {
+		exit_with_error("bind()");
+		return 1;
+	}
 
 	sockaddr_in clientaddr;
 	int clientaddrlen = sizeof(clientaddr);
@@ -38,6 +45,8 @@ int main() {
 		retval = recvfrom(listensock, (char*)&rdata, sizeof(rdata), 0, (struct sockaddr*) &clientaddr, &clientaddrlen);
 		if (retval == SOCKET_ERROR) break;
 		if (retval <= 0) break;
+		//printf("[수신] %s:%d 로부터 패킷 도착!\n", inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
+		printf("[수신] 패킷 도착!\n");
 
 		rdata.left_num = ntohl(rdata.left_num);
 		rdata.right_num = ntohl(rdata.right_num);
