@@ -6,7 +6,7 @@ Game::Game()
     , camera(sf::Vector2f(400.f, 300.f), sf::Vector2f(800.f, 600.f))
     , grid(sf::Vector2f(2000.f, 1200.f), 64.f)
 {
-    worldSize = sf::Vector2f(2000.f, 1200.f);
+    worldSize = sf::Vector2f(6000.f, 6000.f);
     window.setFramerateLimit(60);
 }
 
