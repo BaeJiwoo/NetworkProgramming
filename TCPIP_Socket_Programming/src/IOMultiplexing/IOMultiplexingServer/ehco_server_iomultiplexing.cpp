@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
 
 	while (1) {
 		allfds = readfds;
-		printf("allfds : %d\nreadfds : %d\n", allfds.fd_count, readfds.fd_count);
+		//printf("allfds : %d\nreadfds : %d\n", allfds.fd_count, readfds.fd_count);
 
 		fd_num = select(0, &allfds, NULL, NULL, NULL);
 		if (FD_ISSET(listensock, &allfds)) {
