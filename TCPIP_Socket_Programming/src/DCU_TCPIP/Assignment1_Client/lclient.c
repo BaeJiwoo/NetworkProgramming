@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
 	serveraddr.sin_family = AF_INET;
 	serveraddr.sin_port = htons(SERVERPORT);
 	inet_pton(AF_INET, SERVERIP, &serveraddr.sin_addr);
-	retval = connect(clientsock, (struct sockaddr *)&serveraddr, sizeof(serveraddr));
+	retval = connect(clientsock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
 	if (retval == SOCKET_ERROR) return 1;
 
 	//데이터 읽기
@@ -43,12 +43,12 @@ int main(int argc, char* argv[]) {
 		printf("[TCP클라이언트] %d바이트 전송\n", retval);
 
 		// recieve
-		retval = recv(clientsock, buf, len, 0);
+		retval = recv(clientsock, buf, BUFSIZE, 0);
 		if (retval == SOCKET_ERROR) break;
 		else if (retval == 0) break;
-
+		buf[retval] = '\0';
 		// data print
-		printf("[TCP서버] %s, %d바이트\n", buf, retval);
+		printf("[TCP서버] %s %d바이트\n", buf, retval);
 	}
 
 	closesocket(clientsock);
