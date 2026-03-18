@@ -1,0 +1,8 @@
+[
+    uuid(906e0ce0-adde-4733-93e2-30d635f99996),
+    version(1.0)
+]
+interface MyRPCProject {
+    void HelloProc([in, string] const unsigned char* pszString);
+    void Shutdown(void);
+}
