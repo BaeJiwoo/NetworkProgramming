@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
 		handleInfo->hClntSock = hClntSock;
 		memcpy(&(handleInfo->clntAdr), &clntAdr, addrLen);
 
-		CreateIoCompletionPort((HANDLE)hClntSock, hComPort, (DWORD)handleInfo, 0);
+		CreateIoCompletionPort((HANDLE)hClntSock, hComPort, (ULONG_PTR)handleInfo, 0);
 		
 		ioInfo = (LPPER_IO_DATA)malloc(sizeof(PER_IO_DATA));
 		memset(&(ioInfo->overlapped), 0, sizeof(OVERLAPPED));
@@ -88,7 +88,7 @@ DWORD WINAPI EchoThreadMain(LPVOID pComPort) {
 
 	while (1) {
 		GetQueuedCompletionStatus(hComPort, &bytesTrans,
-			(LPDWORD)&handleInfo, (LPOVERLAPPED)&ioInfo, INFINITE);
+			(ULONG_PTR)&handleInfo, (LPOVERLAPPED)&ioInfo, INFINITE);
 		sock = handleInfo->hClntSock;
 
 		if (ioInfo->rwMode == READ) {
@@ -100,7 +100,7 @@ DWORD WINAPI EchoThreadMain(LPVOID pComPort) {
 			}
 
 			memset(&(ioInfo->overlapped), 0, sizeof(OVERLAPPED));
-			ioInfo->wsaBuf.len = BUF_SIZE;
+			ioInfo->wsaBuf.len = bytesTrans;
 			ioInfo->rwMode = WRITE;
 			WSASend(sock, &(ioInfo->wsaBuf),
 				1, NULL, 0, &(ioInfo->overlapped), NULL);
