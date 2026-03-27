@@ -1,4 +1,5 @@
 #pragma once
+#pragma once
 #pragma comment(lib, "ws2_32.lib")
 
 #include "Define.h";
@@ -86,7 +87,7 @@ public:
 		return true;
 	}
 
-	
+
 
 private:
 	void CreateClient(const UINT32 maxClientCount) {
@@ -108,7 +109,7 @@ private:
 
 	bool CreateAcceptThread() {
 		mAccepterThread = std::thread([this]() { AccepterThread(); });
-		
+
 		printf("Accepter Thread Started...\n");
 		return true;
 	}
@@ -125,8 +126,8 @@ private:
 
 	bool BindIOCompletionPort(stClientInfo* pClientInfo) {
 		auto hIOCP = CreateIoCompletionPort((HANDLE)pClientInfo->m_socketClient,
-									(HANDLE)m_IOCPHandle,
-									(ULONG_PTR)(pClientInfo), 0);
+			(HANDLE)m_IOCPHandle,
+			(ULONG_PTR)(pClientInfo), 0);
 
 		if (NULL == hIOCP || m_IOCPHandle != hIOCP) {
 			printf("[ERROR] CreateIoCompletionPort() error : %d", WSAGetLastError());
@@ -151,7 +152,7 @@ private:
 			(LPWSAOVERLAPPED) & (pClientInfo->m_stRecvOverlappedEx),
 			NULL);
 
-		if(nRet == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING)) {
+		if (nRet == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING)) {
 			printf("[ERROR] WSARecv() error : %d", WSAGetLastError());
 			return false;
 		}
@@ -230,7 +231,7 @@ private:
 		}
 	}
 
-	void AccepterThread(){
+	void AccepterThread() {
 		SOCKADDR_IN stClientAddr;
 		int nAddrLen = sizeof(SOCKADDR_IN);
 		while (mIsAccepterRun) {
@@ -243,7 +244,7 @@ private:
 			}
 
 			bool bRet = BindIOCompletionPort(pClientInfo);
-			if(false == bRet) {
+			if (false == bRet) {
 				return;
 			}
 
@@ -255,7 +256,7 @@ private:
 			char clientIp[32] = { 0, };
 			inet_ntop(AF_INET, &(stClientAddr.sin_addr), clientIp, 32 - 1);
 			printf("Client Joined : IP(%s) SOCKET(%d)\n", clientIp, (int)pClientInfo->m_socketClient);
-			
+
 			mClientCnt++;
 		}
 	}
@@ -278,12 +279,12 @@ private:
 
 
 	// property
-	SOCKET						mListenSocket		= INVALID_SOCKET;
+	SOCKET						mListenSocket = INVALID_SOCKET;
 	std::vector<stClientInfo>	mClientInfos;
-	HANDLE						m_IOCPHandle		= INVALID_HANDLE_VALUE;
+	HANDLE						m_IOCPHandle = INVALID_HANDLE_VALUE;
 	std::vector<std::thread>	mIOWorkerThreads;
 	std::thread					mAccepterThread;
-	bool						mIsAccepterRun		= true;
-	bool						mIsWorkerRun		= true;
-	int							mClientCnt			= 0;
+	bool						mIsAccepterRun = true;
+	bool						mIsWorkerRun = true;
+	int							mClientCnt = 0;
 };

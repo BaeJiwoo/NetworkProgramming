@@ -1,0 +1,302 @@
+#pragma once
+#include "Define.h"
+#include <vector>
+#include <thread>
+
+
+class IOCPServer {
+public:
+	IOCPServer() {}
+	~IOCPServer() {
+		WSACleanup();
+	}
+
+	bool InitSocket() {
+		if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+			printf("[ERROR] WSAStartup(): %d\n", WSAGetLastError());
+			return false;
+		}
+
+		mListeningSocket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, NULL, WSA_FLAG_OVERLAPPED);
+		if (INVALID_SOCKET == mListeningSocket) {
+			printf("[ERROR] socket(): %d\n", WSAGetLastError());
+			return false;
+		}
+
+		printf("소켓 초기화 성공\n");
+		return true;
+	}
+
+	bool BindandListen(UINT16 PORT) {
+		mPort = PORT;
+		SOCKADDR_IN serveraddr;
+		memset(&serveraddr, 0x00, sizeof(SOCKADDR_IN));
+		serveraddr.sin_family = AF_INET;
+		serveraddr.sin_port = htons(mPort);
+		serveraddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
+
+		int nRet = bind(mListeningSocket, (struct sockaddr*)&serveraddr, sizeof(SOCKADDR_IN));
+		if (SOCKET_ERROR == nRet) {
+			printf("[ERROR] bind(): %d\n", WSAGetLastError());
+			return false;
+		}
+
+		nRet = listen(mListeningSocket, 5);
+		if (SOCKET_ERROR == nRet) {
+			printf("[ERROR] listen(): %d\n", WSAGetLastError());
+			return false;
+		}
+
+		printf("서버 등록 성공\n");
+		return true;
+	}
+
+	bool StartServer(UINT32 MAXCLIENT) {
+
+		CreateClient(MAXCLIENT);
+
+		mIOCPHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, MAX_WORKERTHREAD);
+		if (NULL == mIOCPHandle) {
+			printf("[ERROR] CreateIoCompletionPort(): %d\n", WSAGetLastError());
+		}
+
+		bool bRet = CreateWorkerThread();
+		if (false == bRet) {
+			printf("[ERROR] CreateWorkerThread(): %d\n", WSAGetLastError());
+			return false;
+		}
+
+		bRet = CreateAccepterThread();
+		if (false == bRet) {
+			printf("[ERROR] CreateAccepterThread(): %d\n", WSAGetLastError());
+			return false;
+		}
+
+		printf("Server Start...\n");
+		return true;
+	}
+
+	void CreateClient(const UINT32 MAXCLIENT) {
+		for (UINT32 i = 0; i < MAXCLIENT; ++i) {
+			mClientInfos.emplace_back();
+
+			mClientInfos[i].mIndex = i;
+		}
+	}
+
+	void DestroyThread() {
+		mIsWorkerRun = false;
+		CloseHandle(mIOCPHandle);
+
+		for (auto& worker : mIOWorkerThreads) {
+			if(worker.joinable())
+				worker.join();
+		}
+
+		mIsAccepterRun = false;
+		closesocket(mListeningSocket);
+
+		if (mAccepterThread.joinable())
+			mAccepterThread.join();
+	}
+
+private:
+	bool BindRecv(stClientInfo* pClientInfo) {
+		DWORD dwFlag = 0;
+		DWORD dwRecvNumBytes = 0;
+
+		// receive and send message
+		pClientInfo->m_RecvOverlappedEx.m_wsabuf.buf = pClientInfo->szRecvBuf;
+		pClientInfo->m_RecvOverlappedEx.m_wsabuf.len = MAX_SOCKBUF;
+		pClientInfo->m_RecvOverlappedEx.m_eOperation = IOOperation::RECV;
+
+		int nRet = WSARecv(pClientInfo->m_socketClient
+			, &(pClientInfo->m_RecvOverlappedEx.m_wsabuf)
+			, 1
+			, &dwRecvNumBytes
+			, &dwFlag
+			, (LPWSAOVERLAPPED) & (pClientInfo->m_RecvOverlappedEx),
+			NULL);
+
+		if (nRet == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING)) {
+			printf("[ERROR] WSARecv(): %d\n", WSAGetLastError());
+			return false;
+		}
+
+		return true;
+	}
+
+	bool SendMsg(stClientInfo* pClientInfo, char* pMsg, int nLen) {
+		DWORD dwRecvNumBytes = 0;
+
+		CopyMemory(pClientInfo->szSendBuf, pMsg, nLen);
+		pClientInfo->szSendBuf[nLen] = '\0';
+
+		pClientInfo->m_SendOverlappedEx.m_wsabuf.buf = pClientInfo->szSendBuf;
+		pClientInfo->m_SendOverlappedEx.m_wsabuf.len = nLen;
+		pClientInfo->m_SendOverlappedEx.m_eOperation = IOOperation::SEND;
+
+
+		int nRet = WSASend(pClientInfo->m_socketClient
+			, &(pClientInfo->m_SendOverlappedEx.m_wsabuf)
+			, 1
+			, &dwRecvNumBytes
+			, 0
+			, (LPWSAOVERLAPPED) & (pClientInfo->m_SendOverlappedEx)
+			, NULL);
+
+		if (nRet == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING)) {
+			printf("[ERROR] WSASend(): %d\n", WSAGetLastError());
+			return false;
+		}
+
+		return true;
+	}
+
+	bool CreateWorkerThread() {
+		unsigned int uiThreadId = 0;
+		for (UINT16 i = 0; i < MAX_WORKERTHREAD; ++i) {
+			mIOWorkerThreads.emplace_back([this]() {WorkerThread(); });
+		}
+
+		printf("WorkerThread Started...\n");
+		return true;
+	}
+
+	stClientInfo* GetEmptyClientInfo() {
+		for (auto& client : mClientInfos) {
+			if (INVALID_SOCKET == client.m_socketClient)
+				return &client;
+		}
+		return nullptr;
+	}
+
+	bool CreateAccepterThread() {
+		mAccepterThread = std::thread([this]() {AccepterTrhead(); });
+		printf("AccepterThread Started...\n");
+		return true;
+	}
+
+	void WorkerThread() {
+		DWORD dwIoSize;
+		stClientInfo* pClientInfo;
+		LPOVERLAPPED lpOverlapped = NULL;
+
+		while (mIsWorkerRun) {
+			bool bSuccess = GetQueuedCompletionStatus(mIOCPHandle,
+				&dwIoSize
+				, (PULONG_PTR)&pClientInfo
+				, &lpOverlapped,
+				INFINITE);
+
+			if (TRUE == bSuccess && 0 == dwIoSize && NULL == lpOverlapped) {
+				mIsWorkerRun = false;
+				continue;
+			}
+
+			if (NULL == lpOverlapped) {
+				continue;
+			}
+
+			if (FALSE == bSuccess || (0 == dwIoSize && TRUE == bSuccess)) {
+				printf("socket(%d) disconnected\n", pClientInfo->m_socketClient);
+			}
+
+			auto pOverlapped = (stOverlappedEx*)lpOverlapped;
+			if (IOOperation::RECV == pOverlapped->m_eOperation) {
+				pClientInfo->szRecvBuf[dwIoSize] = '\0';
+				printf("[RECV] %s :%d", pClientInfo->szRecvBuf, dwIoSize);
+
+				SendMsg(pClientInfo, pClientInfo->szRecvBuf, dwIoSize);
+
+				BindRecv(pClientInfo);
+			}
+			else if (IOOperation::SEND == pOverlapped->m_eOperation) {
+				// 전송 내용 출력 후 recv기다리기...
+				printf("[SEND] bytes : %d , msg : %s\n", dwIoSize, pClientInfo->szSendBuf);
+			}
+			else {
+				printf("[Error]Exception Error from socket(%d)\n", pClientInfo->m_socketClient);
+			}
+		}
+	}
+
+	bool BindIOCompletionPort(stClientInfo* pClientInfo) {
+		auto hIOCP = CreateIoCompletionPort((HANDLE)pClientInfo->m_socketClient
+			, mIOCPHandle
+			, (ULONG_PTR)(pClientInfo), 0);
+
+		if (NULL == hIOCP || mIOCPHandle != hIOCP) {
+			printf("[ERROR] CreateIoCompletionPort(): %d\n", WSAGetLastError());
+			return false;
+		}
+
+		return true;
+	}
+
+	void AccepterTrhead() {
+
+		SOCKADDR_IN stClientAddr;
+		int nAddrLen = sizeof(SOCKADDR_IN);
+
+		while (mIsAccepterRun) {
+			stClientInfo* pClientInfo = GetEmptyClientInfo();
+			if (NULL == pClientInfo) {
+				printf("[ERROR] Client Full!\n");
+				return;
+			}
+
+			pClientInfo->m_socketClient = accept(mListeningSocket, (sockaddr*)&stClientAddr, &nAddrLen);
+			if (INVALID_SOCKET == pClientInfo->m_socketClient) {
+				printf("[ERROR] accept(): %d\n", WSAGetLastError());
+			}
+
+			// bind client socket with Completion Port
+			bool bRet = BindIOCompletionPort(pClientInfo);
+			if (false == bRet) {
+				printf("[ERROR] BindIOCompletionPort()\n");
+				return;
+			}
+
+			// request Recv Overlapped IO
+			bRet = BindRecv(pClientInfo);
+			if (false == bRet) {
+				printf("[ERROR] bindRecv()\n");
+				return;
+			}
+
+			++mClientCnt;
+		}
+	}
+
+	void CloseSocket(stClientInfo* pClientInfo, bool bIsForce = false) {
+		struct linger stLinger = { 0,0 };
+
+		if (true == bIsForce) {
+			stLinger.l_onoff = 1;
+		}
+
+		shutdown(pClientInfo->m_socketClient, SD_BOTH);
+
+		setsockopt(pClientInfo->m_socketClient, SOL_SOCKET, SO_LINGER, (char*)&stLinger, sizeof(stLinger));
+		closesocket(pClientInfo->m_socketClient);
+
+		pClientInfo->m_socketClient = INVALID_SOCKET;
+	}
+
+
+	WSADATA wsa;
+	SOCKET mListeningSocket = INVALID_SOCKET;
+	int mPort;
+	std::vector<stClientInfo> mClientInfos;
+	HANDLE mIOCPHandle = NULL;
+
+
+	std::vector<std::thread> mIOWorkerThreads;
+	std::thread mAccepterThread;
+
+	bool mIsWorkerRun = true;
+	bool mIsAccepterRun = true;
+
+	int mClientCnt = 0;
+};
