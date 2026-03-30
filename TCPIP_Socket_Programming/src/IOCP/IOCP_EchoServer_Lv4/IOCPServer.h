@@ -1,3 +1,14 @@
+/*
+4 단계. 네트워크와 로직(패킷 or 요청) 처리 각각의 스레드로 분리하기
+Send를 Recv와 다른 스레드에서 하기
+send를 연속으로 보낼 수 있는 구조가 되어야 한다.
+
+
+- Recv와 Send각각 스레드를 반반 만듦
+	- recv: 버퍼 읽어서 send 수행
+	- send: 버퍼 읽어서 recv 수행
+	-> cp는 하나로?? 
+*/
 #pragma once
 #include "Define.h"
 #include <vector>
@@ -87,9 +98,14 @@ public:
 	void DestroyThread() {
 		mIsWorkerRun = false;
 		CloseHandle(mIOCPHandle);
+		CloseHandle(mIOCPHandle);
 
-		for (auto& worker : mIOWorkerThreads) {
-			if(worker.joinable())
+		for (auto& worker : mRecvWorkerThreads) {
+			if (worker.joinable())
+				worker.join();
+		}
+		for (auto& worker : mSendWorkerThreads) {
+			if (worker.joinable())
 				worker.join();
 		}
 
@@ -99,6 +115,10 @@ public:
 		if (mAccepterThread.joinable())
 			mAccepterThread.join();
 	}
+
+
+	virtual void End() {}
+	virtual void Run(UINT16 uint16_maxClient){}
 
 private:
 	bool BindRecv(stClientInfo* pClientInfo) {
@@ -142,7 +162,7 @@ private:
 			, 1
 			, &dwRecvNumBytes
 			, 0
-			, (LPWSAOVERLAPPED)&(pClientInfo->m_SendOverlappedEx)
+			, (LPWSAOVERLAPPED) & (pClientInfo->m_SendOverlappedEx)
 			, NULL);
 
 		if (nRet == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING)) {
@@ -155,8 +175,11 @@ private:
 
 	bool CreateWorkerThread() {
 		unsigned int uiThreadId = 0;
-		for (UINT16 i = 0; i < MAX_WORKERTHREAD; ++i) {
-			mIOWorkerThreads.emplace_back([this]() {WorkerThread(); });
+		for (UINT16 i = 0; i < MAX_WORKERTHREAD/2; ++i) {
+			mRecvWorkerThreads.emplace_back([this]() {WorkerRecvThread(); });
+		}
+		for (UINT16 i = 0; i < MAX_WORKERTHREAD/2; ++i) {
+			mSendWorkerThreads.emplace_back([this]() {WorkerSendThread(); });
 		}
 
 		printf("WorkerThread Started...\n");
@@ -177,7 +200,52 @@ private:
 		return true;
 	}
 
-	void WorkerThread() {
+	void WorkerRecvThread() {
+		DWORD dwIoSize;
+		stClientInfo* pClientInfo;
+		LPOVERLAPPED lpOverlapped = NULL;
+
+		while (mIsWorkerRun) {
+			bool bSuccess = GetQueuedCompletionStatus(mIOCPHandle
+				, &dwIoSize
+				, (PULONG_PTR)&pClientInfo
+				, &lpOverlapped,
+				INFINITE);
+
+			if (TRUE == bSuccess && 0 == dwIoSize && NULL == lpOverlapped) {
+				mIsWorkerRun = false;
+				CloseSocket(pClientInfo);
+				continue;
+			}
+
+			if (NULL == lpOverlapped) {
+				continue;
+			}
+
+			if (FALSE == bSuccess || (0 == dwIoSize && TRUE == bSuccess)) {
+				printf("socket(%d) disconnected\n", pClientInfo->m_socketClient);
+			}
+
+			auto pOverlapped = (stOverlappedEx*)lpOverlapped;
+			if (IOOperation::RECV == pOverlapped->m_eOperation) {
+				pClientInfo->szRecvBuf[dwIoSize] = '\0';
+				OnReceive(pClientInfo->m_socketClient);
+				SendMsg(pClientInfo, pClientInfo->szRecvBuf, dwIoSize);
+
+				//BindRecv(pClientInfo);
+			}
+			else if (pOverlapped->m_eOperation == IOOperation::SEND) {
+				// 다시 큐에 삽입
+				bSuccess = PostQueuedCompletionStatus(mIOCPHandle, dwIoSize, (ULONG_PTR)&pClientInfo, (LPOVERLAPPED)&lpOverlapped);
+				continue;
+			}
+			else {
+				printf("[Error]Exception Error from socket(%d)\n", pClientInfo->m_socketClient);
+			}
+		}
+	}
+
+	void WorkerSendThread() {
 		DWORD dwIoSize;
 		stClientInfo* pClientInfo;
 		LPOVERLAPPED lpOverlapped = NULL;
@@ -191,6 +259,52 @@ private:
 
 			if (TRUE == bSuccess && 0 == dwIoSize && NULL == lpOverlapped) {
 				mIsWorkerRun = false;
+				CloseSocket(pClientInfo);
+				continue;
+			}
+
+			if (NULL == lpOverlapped) {
+				continue;
+			}
+
+			if (FALSE == bSuccess || (0 == dwIoSize && TRUE == bSuccess)) {
+				printf("socket(%d) disconnected\n", pClientInfo->m_socketClient);
+			}
+
+			auto pOverlapped = (stOverlappedEx*)lpOverlapped;
+			if (IOOperation::SEND == pOverlapped->m_eOperation) {
+				// 전송 내용 출력 후 recv기다리기...
+				printf("[SEND] bytes : %d , msg : %s\n", dwIoSize, pClientInfo->szSendBuf);
+				BindRecv(pClientInfo);
+
+			}
+			else if (pOverlapped->m_eOperation == IOOperation::RECV) {
+				// 다시 큐에 삽입
+				bSuccess = PostQueuedCompletionStatus(mIOCPHandle, dwIoSize, (ULONG_PTR)&pClientInfo, (LPOVERLAPPED)&lpOverlapped);
+				continue;
+			}
+			else {
+				printf("[Error]Exception Error from socket(%d)\n", pClientInfo->m_socketClient);
+			}
+		}
+	}
+
+	// Legacy Worker Thread
+	/*
+	void WorkerThread() {
+		DWORD dwIoSize;
+		stClientInfo* pClientInfo;
+		LPOVERLAPPED lpOverlapped = NULL;
+		while (mIsWorkerRun) {
+			bool bSuccess = GetQueuedCompletionStatus(mIOCPHandle,
+				&dwIoSize
+				, (PULONG_PTR)&pClientInfo
+				, &lpOverlapped,
+				INFINITE);
+
+			if (TRUE == bSuccess && 0 == dwIoSize && NULL == lpOverlapped) {
+				mIsWorkerRun = false;
+				CloseSocket(pClientInfo);
 				continue;
 			}
 
@@ -207,19 +321,22 @@ private:
 				pClientInfo->szRecvBuf[dwIoSize] = '\0';
 				OnReceive(pClientInfo->m_socketClient);
 
-				SendMsg(pClientInfo, pClientInfo->szRecvBuf, dwIoSize);
+				//SendMsg(pClientInfo, pClientInfo->szRecvBuf, dwIoSize);
 
-				BindRecv(pClientInfo);
+				//BindRecv(pClientInfo);
 			}
 			else if (IOOperation::SEND == pOverlapped->m_eOperation) {
 				// 전송 내용 출력 후 recv기다리기...
-				printf("[SEND] bytes : %d , msg : %s\n", dwIoSize, pClientInfo->szSendBuf);
+				//printf("[SEND] bytes : %d , msg : %s\n", dwIoSize, pClientInfo->szSendBuf);
+				
+
 			}
 			else {
 				printf("[Error]Exception Error from socket(%d)\n", pClientInfo->m_socketClient);
 			}
 		}
 	}
+	*/
 
 	bool BindIOCompletionPort(stClientInfo* pClientInfo) {
 		auto hIOCP = CreateIoCompletionPort((HANDLE)pClientInfo->m_socketClient
@@ -300,6 +417,7 @@ private:
 
 	}
 
+
 	WSADATA wsa;
 	SOCKET mListeningSocket = INVALID_SOCKET;
 	int mPort;
@@ -307,7 +425,9 @@ private:
 	HANDLE mIOCPHandle = NULL;
 
 
-	std::vector<std::thread> mIOWorkerThreads;
+	//std::vector<std::thread> mIOWorkerThreads;
+	std::vector<std::thread> mRecvWorkerThreads;
+	std::vector<std::thread> mSendWorkerThreads;
 	std::thread mAccepterThread;
 
 	bool mIsWorkerRun = true;

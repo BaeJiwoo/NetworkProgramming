@@ -43,6 +43,7 @@ int main(int argc, char* argv[])
 			break;
 
 		strLen = strlen(message);
+		message[strLen - 1] = '\0';
 		send(hSocket, message, strLen, 0);
 
 		readLen = 0;
@@ -53,7 +54,7 @@ int main(int argc, char* argv[])
 				break;
 		}
 		message[strLen] = 0;
-		printf("Message from server: %s", message);
+		printf("Message from server: %s\n", message);
 	}
 
 	closesocket(hSocket);
