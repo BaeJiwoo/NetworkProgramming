@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{70e69c6e-4072-46d4-ad7d-72c2b42d9840}</ProjectGuid>
-    <RootNamespace>IOCPEchoServerLv4</RootNamespace>
+    <ProjectGuid>{3f5dcb3e-4b55-43dd-a91a-db1bdeb57a3b}</ProjectGuid>
+    <RootNamespace>SerializationServer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -124,12 +124,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Server.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Define.h" />
-    <ClInclude Include="EchoServer.h" />
-    <ClInclude Include="IOCPServer.h" />
-    <ClInclude Include="Packet.h" />
+    <ClInclude Include="Server.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

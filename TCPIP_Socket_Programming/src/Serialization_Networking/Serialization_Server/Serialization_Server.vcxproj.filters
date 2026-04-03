@@ -13,27 +13,18 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="ServerNetwork">
-      <UniqueIdentifier>{f76a062c-6c46-497a-abb0-4e8bc77d9d8c}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="Server.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Define.h">
-      <Filter>ServerNetwork</Filter>
-    </ClInclude>
-    <ClInclude Include="IOCPServer.h">
-      <Filter>ServerNetwork</Filter>
-    </ClInclude>
-    <ClInclude Include="EchoServer.h">
-      <Filter>소스 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="Packet.h">
-      <Filter>ServerNetwork</Filter>
+    <ClInclude Include="Server.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
