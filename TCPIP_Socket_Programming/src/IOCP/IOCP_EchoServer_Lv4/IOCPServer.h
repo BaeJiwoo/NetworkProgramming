@@ -1,8 +1,8 @@
 //출처: 강정중님의 저서 '온라인 게임서버'에서
 #pragma once
 #pragma comment(lib, "ws2_32")
-
 #include "Define.h"
+#include "ClientInfo.h"
 #include <thread>
 #include <vector>
 
@@ -116,6 +116,15 @@ public:
 		}
 	}
 
+	bool SendMsg(UINT32 u32ClientIndex, char* pMsg, UINT32 nLen)
+	{
+		stClientInfo* pClientInfo = GetClientInfo(u32ClientIndex);
+		return pClientInfo->SendMsg(pMsg, nLen) == false;
+	}
+	stClientInfo* GetClientInfo(const UINT32 sessionIndex)
+	{
+		return &mClientInfos[sessionIndex];
+	}
 
 	// 네트워크 이벤트를 처리할 함수들
 	virtual void Run(const UINT16 maxclient_) {}
@@ -123,6 +132,7 @@ public:
 	virtual void OnConnect(const UINT32 clientIndex_) {}
 	virtual void OnClose(const UINT32 clientIndex_) {}
 	virtual void OnReceive(const UINT32 clientIndex_, const UINT32 size_, char* pData_) {}
+	virtual void OnSend(const UINT32 clientIndex_, const UINT32 size_, char* pData_) {}
 
 
 private:
@@ -132,7 +142,7 @@ private:
 		{
 			mClientInfos.emplace_back();
 
-			mClientInfos[i].mIndex = i;
+			mClientInfos[i].Init(i);
 		}
 	}
 
@@ -162,90 +172,20 @@ private:
 	{
 		for (auto& client : mClientInfos)
 		{
-			if (INVALID_SOCKET == client.m_socketClient)
+			if (!client.IsConnected())
 			{
 				return &client;
 			}
 		}
-
 		return nullptr;
 	}
 
-	bool BindIOCompletionPort(stClientInfo* pClientInfo)
-	{
-		auto hIOCP = CreateIoCompletionPort((HANDLE)pClientInfo->m_socketClient
-			, mIOCPHandle
-			, (ULONG_PTR)(pClientInfo), 0);
+	
 
-		if (NULL == hIOCP || mIOCPHandle != hIOCP)
-		{
-			printf("[에러] CreateIoCompletionPort()함수 실패: %d\n", GetLastError());
-			return false;
-		}
+	
 
-		return true;
-	}
-
-	//WSARecv Overlapped I/O 작업을 시킨다.
-	bool BindRecv(stClientInfo* pClientInfo)
-	{
-		DWORD dwFlag = 0;
-		DWORD dwRecvNumBytes = 0;
-
-		//Overlapped I/O을 위해 각 정보를 셋팅해 준다.
-		pClientInfo->m_stRecvOverlappedEx.m_wsaBuf.len = MAX_SOCKBUF;
-		pClientInfo->m_stRecvOverlappedEx.m_wsaBuf.buf = pClientInfo->mRecvBuf;
-		pClientInfo->m_stRecvOverlappedEx.m_eOperation = IOOperation::RECV;
-
-		int nRet = WSARecv(pClientInfo->m_socketClient,
-			&(pClientInfo->m_stRecvOverlappedEx.m_wsaBuf),
-			1,
-			&dwRecvNumBytes,
-			&dwFlag,
-			(LPWSAOVERLAPPED) & (pClientInfo->m_stRecvOverlappedEx),
-			NULL);
-
-		//socket_error이면 client socket이 끊어진걸로 처리한다.
-		if (nRet == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING))
-		{
-			printf("[에러] WSARecv()함수 실패 : %d\n", WSAGetLastError());
-			return false;
-		}
-
-		return true;
-	}
-
-	//WSASend Overlapped I/O작업을 시킨다.
-	bool SendMsg(stClientInfo* pClientInfo, char* pMsg, int nLen)
-	{
-		DWORD dwRecvNumBytes = 0;
-
-		//전송될 메세지를 복사
-		CopyMemory(pClientInfo->mSendBuf, pMsg, nLen);
-		pClientInfo->mSendBuf[nLen] = '\0';
-
-
-		//Overlapped I/O을 위해 각 정보를 셋팅해 준다.
-		pClientInfo->m_stSendOverlappedEx.m_wsaBuf.len = nLen;
-		pClientInfo->m_stSendOverlappedEx.m_wsaBuf.buf = pClientInfo->mSendBuf;
-		pClientInfo->m_stSendOverlappedEx.m_eOperation = IOOperation::SEND;
-
-		int nRet = WSASend(pClientInfo->m_socketClient,
-			&(pClientInfo->m_stSendOverlappedEx.m_wsaBuf),
-			1,
-			&dwRecvNumBytes,
-			0,
-			(LPWSAOVERLAPPED) & (pClientInfo->m_stSendOverlappedEx),
-			NULL);
-
-		//socket_error이면 client socket이 끊어진걸로 처리한다.
-		if (nRet == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING))
-		{
-			printf("[에러] WSASend()함수 실패 : %d\n", WSAGetLastError());
-			return false;
-		}
-		return true;
-	}
+	
+	
 
 	void WokerThread()
 	{
@@ -288,24 +228,32 @@ private:
 			//Overlapped I/O Recv작업 결과 뒤 처리
 			if (IOOperation::RECV == pOverlappedEx->m_eOperation)
 			{
-				OnReceive(pClientInfo->mIndex, dwIoSize, pClientInfo->mRecvBuf);
+				OnReceive(pClientInfo->GetIndex(), dwIoSize, pClientInfo->GetRecvBuf());
 				//pClientInfo->mRecvBuf[dwIoSize] = '\0';
 				//printf("[수신] bytes : %d , msg : %s\n", dwIoSize, pClientInfo->mRecvBuf);
 
 				//클라이언트에 메세지를 에코한다.
-				SendMsg(pClientInfo, pClientInfo->mRecvBuf, dwIoSize);
 
-				BindRecv(pClientInfo);
+				// TODO: 이 부분 수정 필요할 듯
+				//SendMsg(pClientInfo, pClientInfo->mRecvBuf, dwIoSize);
+
+				//BindRecv(pClientInfo);
+				pClientInfo->BindRecv();
 			}
 			//Overlapped I/O Send작업 결과 뒤 처리
 			else if (IOOperation::SEND == pOverlappedEx->m_eOperation)
 			{
-				printf("[송신] bytes : %d , msg : %s\n", dwIoSize, pClientInfo->mSendBuf);
+				//printf("[송신] bytes : %d , msg : %s\n", dwIoSize, pClientInfo->mSendBuf);
+				//OnSend(pClientInfo->GetIndex(), dwIoSize, pClientInfo->GetRecvBuf());
+
+				delete[] pOverlappedEx->m_wsaBuf.buf;
+				delete pOverlappedEx;
+				pClientInfo->SendCompleted(dwIoSize);
 			}
 			//예외 상황
 			else
 			{
-				printf("socket(%d)에서 예외상황\n", (int)pClientInfo->m_socketClient);
+				printf("socket(%d)에서 예외상황\n", (int)pClientInfo->GetSocketClient());
 			}
 		}
 	}
@@ -327,60 +275,49 @@ private:
 			}
 
 			//클라이언트 접속 요청이 들어올 때까지 기다린다.
-			pClientInfo->m_socketClient = accept(mListenSocket, (SOCKADDR*)&stClientAddr, &nAddrLen);
-			if (INVALID_SOCKET == pClientInfo->m_socketClient)
+
+			// TODO: OnConnect로 연결 관리
+			SOCKET newSocket = accept(mListenSocket, (SOCKADDR*)&stClientAddr, &nAddrLen);
+			if (INVALID_SOCKET == newSocket)
 			{
 				continue;
 			}
 
+			if (pClientInfo->OnConnect(mIOCPHandle, newSocket) == false) {
+				pClientInfo->Close(true);
+			}
 			//I/O Completion Port객체와 소켓을 연결시킨다.
-			bool bRet = BindIOCompletionPort(pClientInfo);
-			if (false == bRet)
-			{
-				return;
-			}
+			//bool bRet = BindIOCompletionPort(pClientInfo);
+			//if (false == bRet)
+			//{
+			//	return;
+			//}
 
-			//Recv Overlapped I/O작업을 요청해 놓는다.
-			bRet = BindRecv(pClientInfo);
-			if (false == bRet)
-			{
-				return;
-			}
+			////Recv Overlapped I/O작업을 요청해 놓는다.
+			//bRet = BindRecv(pClientInfo);
+			//if (false == bRet)
+			//{
+			//	return;
+			//}
 
 			//char clientIP[32] = { 0, };
 			//inet_ntop(AF_INET, &(stClientAddr.sin_addr), clientIP, 32 - 1);
 			//printf("클라이언트 접속 : IP(%s) SOCKET(%d)\n", clientIP, (int)pClientInfo->m_socketClient);
 
-			OnConnect(pClientInfo->mIndex);
+			OnConnect(pClientInfo->GetIndex());
 
 			//클라이언트 갯수 증가
 			++mClientCnt;
 		}
 	}
 
+	// TODO: ClientInfo가 해결
 	//소켓의 연결을 종료 시킨다.
 	void CloseSocket(stClientInfo* pClientInfo, bool bIsForce = false)
 	{
-		auto clientIndex = pClientInfo->mIndex;
+		auto clientIndex = pClientInfo->GetIndex();
 
-		struct linger stLinger = { 0, 0 };	// SO_DONTLINGER로 설정
-
-		// bIsForce가 true이면 SO_LINGER, timeout = 0으로 설정하여 강제 종료 시킨다. 주의 : 데이터 손실이 있을수 있음 
-		if (true == bIsForce)
-		{
-			stLinger.l_onoff = 1;
-		}
-
-		//socketClose소켓의 데이터 송수신을 모두 중단 시킨다.
-		shutdown(pClientInfo->m_socketClient, SD_BOTH);
-
-		//소켓 옵션을 설정한다.
-		setsockopt(pClientInfo->m_socketClient, SOL_SOCKET, SO_LINGER, (char*)&stLinger, sizeof(stLinger));
-
-		//소켓 연결을 종료 시킨다. 
-		closesocket(pClientInfo->m_socketClient);
-
-		pClientInfo->m_socketClient = INVALID_SOCKET;
+		pClientInfo->Close();
 
 		OnClose(clientIndex);
 	}

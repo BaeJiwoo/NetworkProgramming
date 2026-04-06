@@ -35,5 +35,8 @@
     <ClInclude Include="Packet.h">
       <Filter>ServerNetwork</Filter>
     </ClInclude>
+    <ClInclude Include="ClientInfo.h">
+      <Filter>ServerNetwork</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
