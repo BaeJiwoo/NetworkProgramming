@@ -1,25 +1,32 @@
 /*
 * =====================================================================
-* EchoServer은 IOCPServer에서 처리한 패킷을 실질적으로 처리하는 스레드임
-* IOCPServer가 데이터 Recv Send만을 담당
-* EchoServer는 그 Recv와 Send 시, 처리 방식을 담당함.
-* Recv와 Send의 책임을 IOCPServer만 담당하고
-* EchoServer가 그것을 이용한다고 생각하면 된다.
+* IOCPServer와 서비스의 중간점
+* 받은 메시지를 Packet처리 스레드로 보낸다.
 * =====================================================================
 */
+
 #pragma once
 
 #include "IOCPServer.h"
 #include <mutex>
 #include "Packet.h"
+#include "PacketManager.h"
 #include <deque>
 
 class EchoServer : public IOCPServer
 {
 public:
 	virtual void Run(const UINT16 maxclient_) override {
+		auto sendPacketFunc = [&](UINT32 clientIndex_, UINT16 packetSize, char* pSendPacket) {
+			SendMsg(clientIndex_, pSendPacket, packetSize);
+			};
+
+		m_pPacketManager = std::make_unique<PacketManager>();
+		m_pPacketManager->Init();
+		m_pPacketManager->Run();	
+
+
 		StartServer(maxclient_);
-		mPacketProcessThread = std::thread([this]() {ProcessPacket(); });
 	}
 
 	virtual void End() override {
@@ -65,45 +72,14 @@ public:
 	
 
 private:
-	void ProcessPacket() {
-		/*
-		TODO: 패킷처리 로직
-		- queue에 데이터 들어올 때까지 기다림
-		- Enqueue시, 복사하여 처리
-		- Send로 데이터 전송함.(EchoServer라 처리할 게 이게 다임ㅇㅇ)
-		- 다만 큐 접근 시, Lock해줘야 함.
-		*/
-
-		while (mIsPacketProcessRun) {
-			auto packetData = DequePacketData();
-			if (packetData.DataSize != 0) {
-				SendMsg(packetData.SessionIndex, packetData.pData, packetData.DataSize);
-			}
-			else {
-				std::this_thread::sleep_for(std::chrono::microseconds(1));
-			}
-		}
-
-	}
-
-	PacketData DequePacketData() {
-
-		PacketData packetData;
-		std::lock_guard<std::mutex>  lock(mMutex);
-		if (mPacketDataQueue.empty()) {
-			return PacketData();
-		}
-
-		packetData.Set(mPacketDataQueue.front());
-		mPacketDataQueue.pop_front();
-		return packetData;
-	}
+	
 
 
 	// Properties
 	std::thread mPacketProcessThread;
 	std::deque<PacketData> mPacketDataQueue;
 	bool mIsPacketProcessRun = true;
+	std::unique_ptr<PacketManager> m_pPacketManager;
 
 	std::mutex mMutex;
 };

@@ -30,7 +30,7 @@
     <ClInclude Include="Packet.h">
       <Filter>ServerNetwork</Filter>
     </ClInclude>
-    <ClInclude Include="EchoServer.h">
+    <ClInclude Include="ChatServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,0 +1,70 @@
+#pragma once
+#include <thread>
+#include <mutex>
+#include <deque>
+#include <unordered_map>
+#include <functional>
+#include "Packet.h"
+#include "UserManager.h"
+
+class UserManager;
+class RoomManager;
+class RedisManager;
+
+class PacketManager {
+public:
+	PacketManager() = default;
+	~PacketManager() = default;
+
+	void Init(const UINT32 maxClient_);
+
+	bool Run();
+
+	void End();
+
+	void ReceivePacketData(const UINT32 clientIndex_, const UINT32 size_, char* pData);
+
+	void PushSystemPacket(PacketInfo packet_);
+
+	std::function<void(UINT32, UINT32, char*)> SendPacketFunc;
+
+private:
+	void CreateComponent(const UINT32 maxClient_);
+
+	void ClearConnectionInfo(INT32 clientIndex_);
+
+	void EunquePacketData(const UINT32 clientIndex_);
+	PacketInfo DequePacketData();
+
+	PacketInfo DequeSystemPacketData();
+
+	void ProcessPacket();
+	
+	void ProcessRecvPacket(const UINT32 clientIndex_, const UINT16 packetId_, const UINT16 packetSize_, char* pPacket_);
+
+	void ProcessUserConnect(UINT32 clientIndex_, UINT16 packetSize_, char* pPacket_);
+	void ProcessUserDisConnect(UINT32 clientIndex_, UINT16 packetSize_, char* pPacket_);
+
+	void ProcessLogin(UINT32 clientIndex_, UINT16 packetSize_, char* pPacket_);
+
+	typedef void(PacketManager::* PROCESS_RECV_PACKET_FUNCTION)(UINT32, UINT16, char*);
+	std::unordered_map<int, PROCESS_RECV_PACKET_FUNCTION> mRecvFunctionDictionary;
+
+	UserManager* mUserManager;
+
+	std::function<void(int, char*)> mSendMQDataFunc;
+
+	bool mIsRunProcessThread = false;
+
+	bool mIsRunProcessThread = false;
+
+	std::thread mProcessThread;
+
+	std::mutex mLock;
+
+	std::deque<UINT32> mIncomingPacketUserIndex;
+
+	std::deque<PacketInfo> mPacketDataQueue;
+
+
+};

@@ -1,0 +1,67 @@
+#pragma once
+#include <unordered_map>
+#include "User.h";
+#include "ErrorCode.h"
+
+class UserManager {
+public:
+	UserManager() = default;
+	~UserManager() = default;
+
+	void Init(const UINT32 maxUserCount_) {
+		mMaxUserCnt = maxUserCount_;
+		mUserObjPool = std::vector<User*>(mMaxUserCnt);
+
+		for (auto i = 0; i < mMaxUserCnt; i++) {
+			mUserObjPool[i] = new User();
+			mUserObjPool[i]->Init(i);
+		}
+	}
+
+	INT32 GetCurrentUserCnt() { return mCurrentUserCnt; }
+
+	INT32 GetMaxUserCnt() { return mMaxUserCnt; }
+
+	void IncreaseUserCnt() { mCurrentUserCnt++; }
+
+	void DecreaseUserCnt() 
+	{
+		if (mCurrentUserCnt > 0) {
+			mCurrentUserCnt--;
+		}
+	}
+
+	ERROR_CODE AddUser(char* userID_, int clientIndex_) {
+		auto user_idx = clientIndex_;
+
+		mUserObjPool[user_idx]->SetLogin(userID_);
+
+	}
+
+	INT32 FindUserIndexByID(char* userID_) {
+
+		if (auto res = mUserIDDictionary.find(userID_); res != mUserIDDictionary.end()) {
+			return (*res).second;
+		}
+
+		return -1;
+	}
+
+	void DeleteUserInfo(User* user_) {
+		mUserIDDictionary.erase(user_->GetUserId());
+		user_->Clear();
+	}
+
+	User* GetUserByConnIdx(INT32 clientIndex_) {
+		return mUserObjPool[clientIndex_];
+	}
+
+
+private:
+	UINT32 mMaxUserCnt = 0;
+	UINT32 mCurrentUserCnt = 0;
+
+
+	std::vector<User*> mUserObjPool;
+	std::unordered_map<std::string, int> mUserIDDictionary;
+};
