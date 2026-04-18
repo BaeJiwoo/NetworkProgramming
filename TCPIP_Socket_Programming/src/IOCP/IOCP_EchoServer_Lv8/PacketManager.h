@@ -33,7 +33,7 @@ private:
 
 	void ClearConnectionInfo(INT32 clientIndex_);
 
-	void EunquePacketData(const UINT32 clientIndex_);
+	void EnquePacketData(const UINT32 clientIndex_);
 	PacketInfo DequePacketData();
 
 	PacketInfo DequeSystemPacketData();
@@ -56,7 +56,6 @@ private:
 
 	bool mIsRunProcessThread = false;
 
-	bool mIsRunProcessThread = false;
 
 	std::thread mProcessThread;
 
@@ -66,5 +65,6 @@ private:
 
 	std::deque<PacketInfo> mPacketDataQueue;
 
+	std::deque<PacketInfo> mSystemPacketQueue;
 
 };

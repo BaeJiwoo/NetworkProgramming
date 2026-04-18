@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include "Packet.h"
 
 class User {
 	const UINT32 PACKET_DATA_BUFFER_SIZE = 8096;
@@ -80,7 +81,7 @@ public:
 		mPacketDataBufferWPos += dataSize_;
 	}
 
-	PacketInfo GetPacket() {
+	PacketInfo GetPacket(const UINT32 clientIndex_) {
 		const int PACKET_SIZE_LENGTH = 0;
 		const int PACKET_TYPE_LENGTH = 0;
 		short packetSize = 0;
