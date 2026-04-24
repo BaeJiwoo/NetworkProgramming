@@ -138,7 +138,9 @@
     <ClInclude Include="IOCPServer.h" />
     <ClInclude Include="Packet.h" />
     <ClInclude Include="PacketManager.h" />
+    <ClInclude Include="RedisConnector.h" />
     <ClInclude Include="RedisManager.h" />
+    <ClInclude Include="RedisTask.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="User.h" />
     <ClInclude Include="UserManager.h" />
