@@ -1,119 +1,31 @@
-# 🌐 Network Programming (WinSock2)
+# 🌐 Network Programming
 
-윤상배 저, **'뇌를 자극하는 TCP/IP 소켓 프로그래밍'**을 기반으로 학습하며 Windows 환경에서 구현한 네트워크 프로그램 저장소입니다.  
-모든 소스 코드는 **Visual Studio**를 통해 빌드 및 테스트되었습니다.
+이 저장소는 C/C++ 및 WinSock2 API를 활용하여 기초적인 소켓 통신부터 고성능 서버 아키텍처까지 단계별로 구현하고 학습하는 프로젝트입니다.
 
----
+## 🚀 소개 (Introduction)
+<!-- 프로젝트의 진짜 목적을 간략히 적어주세요. -->
+본 프로젝트는 Windows 환경에서 네트워크 애플리케이션을 개발하기 위한 핵심 기술을 다룹니다. 기본적인 TCP/UDP 통신 모델을 시작으로, 다수의 클라이언트를 효율적으로 처리하기 위한 **IOCP(I/O Completion Port)** 기반의 비동기 서버 구현을 목표로 하고 있습니다.
 
-## 🛠 개발 환경 (Environment)
+## 🛠 기술 스택 (Tech Stack)
+- **Language:** C, C++
+- **OS:** Windows
+- **Network API:** WinSock2
+- **IDE:** Visual Studio
 
-- **OS**: Windows 10 / 11
-- **IDE**: Visual Studio
-- **Language**: C / C++
-- **API**: WinSock2 (Windows Sockets)
+## 💡 주요 구현 내용 (Features)
+<!-- 실제 구현하신 핵심 기능들로 수정해 주세요. -->
+- **Basic Socket Programming:** TCP 및 UDP 기반의 에코/채팅 서버 기초 구현
+- **Multi-threading:** 스레드 풀(Thread Pool)을 활용한 다중 클라이언트 접속 처리
+- **Asynchronous I/O:** `select`, `WSAAsyncSelect`, `WSAEventSelect` 모델 등 다양한 I/O 모델 비교 학습
+- **IOCP (I/O Completion Port):** 대규모 트래픽 처리를 위한 고성능 논블로킹(Non-blocking) 서버 아키텍처 구현 (현재 진행 중)
 
----
+## ⚙️ 시작하기 (Getting Started)
 
-## 🚀 주요 구현 프로젝트 (Main Projects)
+### 요구 사항 (Prerequisites)
+- Visual Studio (2019 또는 2022 권장)
+- Windows 10/11
 
-### 1. EchoServer (TCP / UDP)
-
-서버가 클라이언트로부터 받은 메시지를 그대로 다시 돌려주는 기초 통신 모델입니다.
-
-- **TCP Echo**: 데이터 경계가 없는 스트림 방식의 신뢰성 있는 통신
-- **UDP Echo**: 데이터 경계가 존재하는 데이터그램 방식의 빠른 통신
-
----
-
-### 2. NetworkCalculator (TCP / UDP)
-
-수식과 피연산자를 전송하여 서버에서 계산 결과를 반환하는 네트워크 계산기입니다.
-
-- **Protocol Design**: 구조체 기반 데이터 패킷 설계 및 직렬화 학습
-- **Multi-Mode**: 동일한 계산 로직을 TCP와 UDP 두 방식으로 각각 구현
-
----
-
-## 📁 프로젝트 구조 (Project Structure)
-
-```text
-NetworkProgramming/
-└── TCPIP_Socket_Programming/
-    ├── docs/                   # 학습 정리 및 관련 이론 문서 (예정)
-    └── src/                    # 주요 소스 코드
-        ├── EchoServer/         # 에코 서버 & 클라이언트 (TCP/UDP)
-        └── NetworkCalculator/  # 계산기 서버 & 클라이언트 (TCP/UDP)
-```
-
----
-
-## ⚙️ 설정 및 실행 방법 (Setup & How to Run)
-
-### 1. Visual Studio 프로젝트 설정 (필수)
-
-Windows 소켓 라이브러리 `ws2_32.lib` 를 사용하기 위해 다음 두 가지 방법 중 하나를 선택합니다.
-
-#### 방법 A — 소스 코드에 직접 추가 (권장)
-
-소스 파일(.cpp 또는 .h) 상단에 아래 코드를 추가합니다.
-
-```cpp
-#pragma comment(lib, "ws2_32.lib")
-```
-
-#### 방법 B — 프로젝트 속성에서 추가
-
-1. 솔루션 탐색기에서 **프로젝트 우클릭 → 속성**
-2. **구성 속성 → 링커 → 입력**
-3. **추가 종속성** 항목에 다음 입력
-
-```
-ws2_32.lib;
-```
-
----
-
-### 2. 보안 경고(C4996) 해결 방법
-
-`inet_addr()` 등 구형 함수 사용 시 발생하는 경고를 방지하려면 다음 중 하나를 적용합니다.
-
-#### 방법 A — 프로젝트 설정
-
-프로젝트 속성 → **C/C++ → 일반 → SDL 검사**  
-값을 **아니요 (/sdl-)** 로 변경
-
-#### 방법 B — 코드에서 해결
-
-소스 코드 최상단에 다음 코드 추가
-
-```cpp
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-```
-
----
-
-### 3. 빌드 및 실행 순서
-
-1. `TCPIP_Socket_Programming.sln` 실행
-2. 상단 메뉴에서 **Build → Build Solution** 선택  
-   또는 **Ctrl + Shift + B**
-3. **Server 실행**  
-   서버 프로젝트의 `.exe` 파일을 먼저 실행
-4. **Client 실행**  
-   클라이언트 `.exe` 실행 후 서버와 연결
-
----
-
-## 📚 참고 서적 (Reference)
-
-- 도서명: **뇌를 자극하는 TCP/IP 소켓 프로그래밍**
-- 저자: **윤상배**
-- 출판사: **한빛미디어**
-
----
-
-## 👤 제작자 (Author)
-
-**BaeJiwoo**
-
-GitHub: `@BaeJiwoo`
+### 빌드 및 실행 (Build & Run)
+1. 저장소를 로컬로 클론합니다.
+   ```bash
+   git clone [https://github.com/BaeJiwoo/NetworkProgramming.git](https://github.com/BaeJiwoo/NetworkProgramming.git)
