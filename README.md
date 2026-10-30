@@ -1,57 +1,76 @@
-# 🌐 Network Programming
+# NetworkProgramming
 
-이 저장소는 C/C++ 및 WinSock2 API를 활용하여 기초적인 소켓 통신부터 고성능 서버 아키텍처까지 단계별로 구현하고 학습하는 프로젝트입니다.
+윤성우의 **열혈 TCP/IP 소켓 프로그래밍**을 챕터별로 따라 공부하고, 배운 내용을 바탕으로 **mogameserver** 게임 서버 라이브러리를 만들어 가는 저장소입니다.
 
-## 🚀 소개 (Introduction)
-<!-- 프로젝트의 진짜 목적을 간략히 적어주세요. -->
-본 프로젝트는 Windows 환경에서 네트워크 애플리케이션을 개발하기 위한 핵심 기술을 다룹니다. 기본적인 TCP/UDP 통신 모델을 시작으로, 다수의 클라이언트를 효율적으로 처리하기 위한 **IOCP(I/O Completion Port)** 기반의 비동기 서버 구현을 목표로 하고 있습니다.
+기초 소켓 실습, IOCP 서버를 단계별로 확장한 코드, 응용 프로젝트와 학습 노트를 함께 보관합니다. 현재 서버 코드는 개별 실행 프로젝트로 구성되어 있으며, `mogameserver`의 독립 라이브러리 프로젝트는 아직 없습니다.
 
-## 🛠 기술 스택 (Tech Stack)
-- **Language:** C, C++
-- **OS:** Windows
-- **Network API:** WinSock2
-- **IDE:** Visual Studio
+## 바로 가기
 
-## 💡 주요 구현 내용 (Features)
-<!-- 실제 구현하신 핵심 기능들로 수정해 주세요. -->
-- **Basic Socket Programming:** TCP 및 UDP 기반의 에코/채팅 서버 기초 구현
-- **Multi-threading:** 스레드 풀(Thread Pool)을 활용한 다중 클라이언트 접속 처리
-- **Asynchronous I/O:** `select`, `WSAAsyncSelect`, `WSAEventSelect` 모델 등 다양한 I/O 모델 비교 학습
-- **IOCP (I/O Completion Port):** 대규모 트래픽 처리를 위한 고성능 논블로킹(Non-blocking) 서버 아키텍처 구현 (현재 진행 중)
+| 하려는 일 | 안내 |
+| --- | --- |
+| 교재에서 배운 주제의 코드 찾기 | [교재 학습과 프로젝트 안내](docs/LEARNING_GUIDE.md) |
+| IOCP 단계별 차이와 솔루션 찾기 | [IOCP 단계별 안내](docs/IOCP_GUIDE.md) |
+| 학습 내용을 라이브러리 개발로 연결하기 | [mogameserver 개발 계획](docs/MOGAMESERVER_ROADMAP.md) |
+| 기본 TCP 에코 코드 읽기 | [서버](study/tcpip/EchoServer/TCPServer/echo_server.cpp) · [클라이언트](study/tcpip/EchoServer/TCPClient/echo_client.cpp) |
+| 최근 IOCP 작업 살펴보기 | [Lv9 Redis 연동 작업](study/iocp/IOCP_EchoServer_Lv9) |
 
-## 📈 단계별 구현 및 발전 과정 (Step-by-Step Progress)
+## 학습 흐름
 
-본 프로젝트는 단순한 API 사용법 암기가 아닌, 서버 아키텍처의 병목 현상을 해결하고 성능을 끌어올리는 과정에 초점을 맞춰 단계별로 구현되었습니다.
+1. 소켓 생성, 주소 표현, 바이트 순서와 TCP 연결 과정을 익힙니다.
+2. TCP와 UDP 계산기, 에코 서버로 송수신 방식을 비교합니다.
+3. 멀티스레드와 여러 I/O 모델로 연결 처리 방식을 확장합니다.
+4. IOCP 단계별 코드를 비교하며 연결 관리, 송신 큐, 패킷 처리를 살펴봅니다.
+5. 각 단계에서 재사용할 부분을 기록하고 `mogameserver`의 책임과 인터페이스를 설계합니다.
 
-### 🔹 Phase 1: 소켓 프로그래밍 기초 (Basic Sockets)
-- **TCP/UDP 기반 Echo Server & Client 구현**
-- 블로킹(Blocking) 소켓의 한계점과 데이터 경계(Boundary)에 대한 이해
-- 구조체 직렬화/역직렬화를 통한 간단한 애플리케이션 계층 프로토콜(패킷) 설계
+위 순서는 저장소를 읽는 안내 순서입니다. 교재에서 배운 주제에 해당하는 코드는 [학습 안내](docs/LEARNING_GUIDE.md)에서 찾아볼 수 있습니다.
 
-### 🔹 Phase 2: 멀티스레딩과 동기화 (Multi-threading)
-- 다중 클라이언트 접속 처리를 위한 스레드(Thread) 생성 및 관리
-- 뮤텍스(Mutex), 크리티컬 섹션(Critical Section)을 활용한 스레드 동기화 및 데드락(Deadlock) 방지
-- 스레드 풀(Thread Pool) 개념 도입
+## 저장소 구성
 
-### 🔹 Phase 3: 다양한 I/O 모델 적용 (Asynchronous I/O)
-- **Select 모델:** 다중 I/O 처리를 위한 기초적인 멀티플렉싱 구현
-- **WSAEventSelect 모델:** 이벤트 기반의 논블로킹(Non-blocking) 소켓 통신 구현
-- **Overlapped I/O:** 비동기 입출력을 통한 CPU와 I/O 연산의 중첩 처리 학습
+```text
+NetworkProgramming/
+├─ README.md
+├─ study/
+│  ├─ tcpip/                     교재의 소켓 프로그래밍 실습
+│  │  ├─ EchoServer/             TCP 에코와 여러 I/O 모델
+│  │  ├─ NetworkCalculator/      TCP와 UDP 계산기
+│  │  ├─ IOMultiplexing/         select 기반 실습
+│  │  ├─ MultithreadEchoServer/  멀티스레드 에코 실습
+│  │  ├─ ETC/                    바이트 순서 실습
+│  │  └─ error.h                 실습의 공용 오류 처리
+│  └─ iocp/                      IOCP 단계별 서버와 클라이언트
+├─ projects/
+│  ├─ ChatServer/                채팅 프로젝트 준비 파일
+│  ├─ FTP/                       파일 전송 관련 작업
+│  ├─ RPC/                       RPC 실습
+│  ├─ Serialization_Networking/  TCP 서버 클래스 실습
+│  └─ 2DMultiplayer/             2D 클라이언트와 서버 프로젝트
+├─ assignments/
+│  └─ DCU_TCPIP/                 수업 과제
+└─ docs/
+   ├─ LEARNING_GUIDE.md          학습 주제와 프로젝트 안내
+   ├─ IOCP_GUIDE.md              IOCP 단계별 안내
+   ├─ MOGAMESERVER_ROADMAP.md    라이브러리 개발 계획
+   ├─ notes/                    개념 정리와 학습 회고
+   └─ design/                   채팅 시스템 설계 자료
+```
 
-### 🔹 Phase 4: 고성능 서버 아키텍처, IOCP (현재 진행 중)
-가장 효율적인 윈도우 서버 모델인 **IOCP(I/O Completion Port)** 를 레벨별로 고도화하며 구현 중입니다.
-- **Level 1 ~ 기초:** Worker Thread와 Completion Port 객체 연결 및 기본 비동기 에코 서버 구현
-- **Level 중급:** 세션(Session) 관리, 멀티스레드 환경에서의 안전한 패킷 큐잉 및 브로드캐스팅
-- **Level 9 (최근 작업):** 메모리 단편화 방지를 위한 메모리 풀(Memory Pool) 및 링 버퍼(Ring Buffer) 도입, 더미 클라이언트를 활용한 부하 테스트(Stress Test) 
-*(※ Level 9의 상세 구현 내용에 맞게 이 부분을 수정해 주세요.)*
+## 시작하기
 
-## ⚙️ 시작하기 (Getting Started)
+소켓 실습은 Windows의 WinSock2를 사용하고, C++ 프로젝트는 Visual Studio v143 도구 집합으로 설정되어 있습니다. Visual Studio 2022의 C++ 데스크톱 개발 도구와 Windows SDK를 준비합니다.
 
-### 요구 사항 (Prerequisites)
-- Visual Studio (2019 또는 2022 권장)
-- Windows 10/11
+첫 실습은 [EchoServer.sln](study/tcpip/EchoServer/EchoServer.sln)의 `TCPServer`와 `TCPClient`입니다. 같은 PC에서 서버를 먼저 실행하고 클라이언트를 실행하면, 코드에 지정된 `127.0.0.1:9000`으로 연결을 시도합니다. [실행 순서와 프로젝트별 준비 조건](docs/LEARNING_GUIDE.md)을 참고하세요.
 
-### 빌드 및 실행 (Build & Run)
-1. 저장소를 로컬로 클론합니다.
-   ```bash
-   git clone [https://github.com/BaeJiwoo/NetworkProgramming.git](https://github.com/BaeJiwoo/NetworkProgramming.git)
+문서의 구현 설명은 현재 코드 기준입니다. 빌드 및 실행 결과는 아직 확인 전이며, 프로젝트별 준비 상태는 각 안내에 표시합니다. 특히 `IOCP.sln`은 Lv2만 포함하고, Lv3부터는 각 단계의 솔루션을 사용합니다.
+
+## 학습 노트
+
+| 주제 | 문서 |
+| --- | --- |
+| 소켓 생성과 종료 | [소켓생성및삭제](docs/notes/소켓생성및삭제.md) |
+| 입출력 다중화 | [입출력다중화](docs/notes/입출력다중화.md) |
+| Overlapped I/O | [OverlappedIO](docs/notes/OverlappedIO.md) |
+| IOCP 구조체 | [IOCP관련구조체](docs/notes/IOCP관련구조체.md) |
+| 학습 회고 | [소켓프로그래밍 1회독 후기](docs/notes/소켓프로그래밍1회독후기.md) |
+| 채팅 시스템 설계 자료 | [Damso](docs/design/Damso) |
+
+라이선스는 [LICENSE](LICENSE)를 참고하세요.
